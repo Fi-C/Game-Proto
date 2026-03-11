@@ -5,6 +5,7 @@ public class PlatformerCharacterController : MonoBehaviour
 {
     private InputAction m_moveAction;
     private InputAction m_jumpAction;
+    private InputAction m_dashAction;
 
     private Rigidbody2D m_rigidbody;
 
@@ -12,11 +13,18 @@ public class PlatformerCharacterController : MonoBehaviour
 
     [SerializeField] private float m_playerSpeed = 8f;
     [SerializeField] private float m_jumpForce = 12f;
+    [SerializeField] private bool canDash = true;
+    [SerializeField] private bool isDashing;
+    [SerializeField] private float dashingPower = 24f;
+    [SerializeField] private float dashingTime = 0.2f;
+    [SerializeField] private float dashingCooldown = 1f;
+
 
     private void Awake()
     {
         m_moveAction = InputSystem.actions.FindAction("Move");
         m_jumpAction = InputSystem.actions.FindAction("Jump");
+        m_dashAction = InputSystem.actions.FindAction("Dash");
 
         m_rigidbody = GetComponent<Rigidbody2D>();
     }
@@ -51,5 +59,10 @@ public class PlatformerCharacterController : MonoBehaviour
             m_rigidbody.linearVelocity.x,
             m_jumpForce
         );
+    }
+
+    private void Dash()
+    {
+        Debug.Log("Dash!");
     }
 }
