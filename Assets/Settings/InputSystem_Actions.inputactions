@@ -92,7 +92,7 @@
                     "id": "f4b5b92b-e31f-4775-8784-4f9f3489827d",
                     "expectedControlType": "",
                     "processors": "",
-                    "interactions": "MultiTap",
+                    "interactions": "",
                     "initialStateCheck": false
                 }
             ],
@@ -484,69 +484,25 @@
                 },
                 {
                     "name": "",
-                    "id": "e4d4d890-18af-4a56-abc6-576ce0a97cfd",
-                    "path": "<Keyboard>/x",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Keyboard&Mouse",
-                    "action": "Dash",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "WASD",
-                    "id": "f87cf9b0-9c9c-4953-b088-ced099089200",
-                    "path": "Dpad",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Dash",
-                    "isComposite": true,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "left",
-                    "id": "9e1ed8c4-6977-479e-a997-9f045be8819f",
+                    "id": "10ac7699-8e21-4426-9bdf-4a97c31d3775",
                     "path": "<Keyboard>/a",
-                    "interactions": "",
+                    "interactions": "Tap",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
                     "action": "Dash",
                     "isComposite": false,
-                    "isPartOfComposite": true
+                    "isPartOfComposite": false
                 },
                 {
-                    "name": "left",
-                    "id": "4c3d6885-15fe-47b1-8889-10d9347708b6",
-                    "path": "<Keyboard>/leftArrow",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Keyboard&Mouse",
-                    "action": "Dash",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "right",
-                    "id": "be99c31c-5af5-4b60-84b5-db1cd4401bca",
+                    "name": "",
+                    "id": "a7d856c6-6134-4948-bb50-0e9a7a45767c",
                     "path": "<Keyboard>/d",
-                    "interactions": "",
+                    "interactions": "Tap",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
                     "action": "Dash",
                     "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "right",
-                    "id": "81f05b93-63c8-4867-a43d-22dff3d345c2",
-                    "path": "<Keyboard>/rightArrow",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Keyboard&Mouse",
-                    "action": "Dash",
-                    "isComposite": false,
-                    "isPartOfComposite": true
+                    "isPartOfComposite": false
                 }
             ]
         },
