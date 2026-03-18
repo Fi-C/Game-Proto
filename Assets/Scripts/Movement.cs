@@ -14,6 +14,7 @@ public class PlatformerCharacterController : MonoBehaviour
 
     [SerializeField] private float m_playerSpeed = 8f;
     [SerializeField] private float m_jumpForce = 12f;
+    [SerializeField] private float m_poundForce = 12f;
 
     [SerializeField] private bool canDash = true;
     [SerializeField] private bool isDashing;
@@ -26,6 +27,7 @@ public class PlatformerCharacterController : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
 
     private bool isGrounded;
+    private bool isGroundPounding;
 
     private void Awake()
     {
@@ -54,6 +56,16 @@ public class PlatformerCharacterController : MonoBehaviour
         if (m_dashAction.WasPressedThisFrame() && canDash)
         {
             StartCoroutine(Dash());
+        }
+
+        if (m_groundpoundAction.WasPressedThisFrame() && !isGrounded && !isGroundPounding)
+        {
+            GroundPound();
+        }
+
+        if (isGrounded)
+        {
+            isGroundPounding = false;
         }
     }
 
@@ -99,6 +111,16 @@ public class PlatformerCharacterController : MonoBehaviour
         yield return new WaitForSeconds(dashingCooldown);
 
         canDash = true;
+    }
+
+    private void GroundPound()
+    {
+        isGroundPounding = true;
+
+        m_rigidbody.linearVelocity = new Vector2(
+            m_rigidbody.linearVelocity.x,
+            -m_poundForce
+        );
     }
 
     private void OnDrawGizmosSelected()

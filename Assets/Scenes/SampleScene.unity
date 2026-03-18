@@ -201,7 +201,7 @@ Transform:
   m_GameObject: {fileID: 207112272}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.23, y: -0.28, z: 0}
+  m_LocalPosition: {x: 9.58, y: -6.84, z: 0}
   m_LocalScale: {x: 1, y: -6.383496, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -794,7 +794,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!212 &963823901
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -839,7 +839,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
+  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -927,6 +927,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_playerSpeed: 8
   m_jumpForce: 5
+  m_poundForce: 12
   canDash: 1
   isDashing: 0
   dashingPower: 24
@@ -937,13 +938,6 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  wallCheck: {fileID: 2070676992}
-  wallCheckDistance: 0.3
-  wallLayer:
-    serializedVersion: 2
-    m_Bits: 64
-  wallSlideSpeed: 2
-  wallJumpForce: {x: 10, y: 12}
 --- !u!114 &963823905
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1049,6 +1043,10 @@ MonoBehaviour:
       m_Calls: []
     m_ActionId: f4b5b92b-e31f-4775-8784-4f9f3489827d
     m_ActionName: 'Player/Dash[/Keyboard/x,/Keyboard/a,/Keyboard/leftArrow,/Keyboard/d,/Keyboard/rightArrow]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: e1c6145e-4c51-41ce-847b-141e8a384f57
+    m_ActionName: 'Player/Ground Pound[/Keyboard/s,/Keyboard/downArrow,/XInputControllerWindows/leftStick/down]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player
@@ -1200,7 +1198,7 @@ Transform:
   m_GameObject: {fileID: 1956715117}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6.09, y: 0.54, z: 0}
+  m_LocalPosition: {x: -8.47, y: -6.9, z: 0}
   m_LocalScale: {x: 1, y: -6.383496, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
