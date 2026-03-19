@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 
@@ -26,8 +26,25 @@ public class PlatformerCharacterController : MonoBehaviour
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
 
+    [SerializeField] private Transform wallCheckLeft;
+    [SerializeField] private Transform wallCheckRight;
+    [SerializeField] private float wallRadius = 0.2f;
+    [SerializeField] private LayerMask wallLayer;
+
+    [SerializeField] private float wallSlideSpeed = 2f;
+    [SerializeField] private float wallJumpForce = 12f;
+    [SerializeField] private Vector2 wallJumpDirection = new Vector2(1f, 1.5f);
+    [SerializeField] private float wallJumpTime = 0.2f;
+
     private bool isGrounded;
     private bool isGroundPounding;
+
+    private bool isTouchingWallLeft;
+    private bool isTouchingWallRight;
+    private bool isWallSliding;
+    private bool isWallJumping;
+    private float wallJumpTimer;
+    private int wallDirection;
 
     private void Awake()
     {
@@ -48,9 +65,44 @@ public class PlatformerCharacterController : MonoBehaviour
 
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
 
-        if (m_jumpAction.WasPressedThisFrame() && isGrounded)
+        isTouchingWallLeft = Physics2D.OverlapCircle(wallCheckLeft.position, wallRadius, wallLayer);
+        isTouchingWallRight = Physics2D.OverlapCircle(wallCheckRight.position, wallRadius, wallLayer);
+
+        if (!isGrounded && ((isTouchingWallRight && m_input.x > 0) || (isTouchingWallLeft && m_input.x < 0)))
         {
-            Jump();
+            isWallSliding = true;
+            wallDirection = isTouchingWallRight ? 1 : -1;
+        }
+        else
+        {
+            isWallSliding = false;
+        }
+
+        if (m_jumpAction.WasPressedThisFrame())
+        {
+            if (isWallSliding)
+            {
+                isWallJumping = true;
+                wallJumpTimer = wallJumpTime;
+
+                m_rigidbody.linearVelocity = new Vector2(
+                    -wallDirection * wallJumpDirection.x * wallJumpForce,
+                    wallJumpDirection.y * wallJumpForce
+                );
+            }
+            else if (isGrounded)
+            {
+                Jump();
+            }
+        }
+
+        if (isWallJumping)
+        {
+            wallJumpTimer -= Time.deltaTime;
+            if (wallJumpTimer <= 0f)
+            {
+                isWallJumping = false;
+            }
         }
 
         if (m_dashAction.WasPressedThisFrame() && canDash)
@@ -66,6 +118,7 @@ public class PlatformerCharacterController : MonoBehaviour
         if (isGrounded)
         {
             isGroundPounding = false;
+            isWallJumping = false;
         }
     }
 
@@ -77,10 +130,26 @@ public class PlatformerCharacterController : MonoBehaviour
         if (isDashing)
             return;
 
-        m_rigidbody.linearVelocity = new Vector2(
-            m_input.x * m_playerSpeed,
-            m_rigidbody.linearVelocity.y
-        );
+        float moveX = m_input.x;
+
+        if (isWallSliding)
+        {
+            moveX = 0f;
+
+            if (m_rigidbody.linearVelocity.y < -wallSlideSpeed)
+            {
+                m_rigidbody.linearVelocity = new Vector2(0f, -wallSlideSpeed);
+                return;
+            }
+        }
+
+        if (!isWallJumping)
+        {
+            m_rigidbody.linearVelocity = new Vector2(
+                moveX * m_playerSpeed,
+                m_rigidbody.linearVelocity.y
+            );
+        }
     }
 
     private void Jump()
@@ -125,9 +194,22 @@ public class PlatformerCharacterController : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        if (groundCheck == null) return;
+        if (groundCheck != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        }
 
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        if (wallCheckLeft != null)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawWireSphere(wallCheckLeft.position, wallRadius);
+        }
+
+        if (wallCheckRight != null)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(wallCheckRight.position, wallRadius);
+        }
     }
 }
