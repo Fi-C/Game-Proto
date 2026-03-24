@@ -1,215 +1,187 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Collections;
 
 public class PlatformerCharacterController : MonoBehaviour
 {
     private InputAction m_moveAction;
     private InputAction m_jumpAction;
-    private InputAction m_dashAction;
     private InputAction m_groundpoundAction;
 
-    private Rigidbody2D m_rigidbody;
-    private Vector2 m_input;
+    private Rigidbody2D rb;
+    private Vector2 input;
 
-    [SerializeField] private float m_playerSpeed = 8f;
-    [SerializeField] private float m_jumpForce = 12f;
-    [SerializeField] private float m_poundForce = 12f;
+    [Header("Movement")]
+    [SerializeField] private float maxSpeed = 14f;
+    [SerializeField] private float accel = 80f;
+    [SerializeField] private float decel = 100f;
+    [SerializeField] private float airAccel = 60f;
 
-    [SerializeField] private bool canDash = true;
-    [SerializeField] private bool isDashing;
-    [SerializeField] private float dashingPower = 24f;
-    [SerializeField] private float dashingTime = 0.2f;
-    [SerializeField] private float dashingCooldown = 1f;
+    [Header("Jump")]
+    [SerializeField] private float jumpForce = 16f;
+    [SerializeField] private float gravity = 60f;
+    [SerializeField] private float fallMultiplier = 1.8f;
+    [SerializeField] private float lowJumpMultiplier = 2.5f;
 
+    [Header("Ground Pound")]
+    [SerializeField] private float poundForce = 30f;
+    private bool isGroundPounding;
+
+    [Header("Checks")]
     [SerializeField] private Transform groundCheck;
-    [SerializeField] private float groundCheckRadius = 0.2f;
+    [SerializeField] private float groundRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
 
+    [Header("Wall Jump")]
     [SerializeField] private Transform wallCheckLeft;
     [SerializeField] private Transform wallCheckRight;
     [SerializeField] private float wallRadius = 0.2f;
     [SerializeField] private LayerMask wallLayer;
 
-    [SerializeField] private float wallSlideSpeed = 2f;
-    [SerializeField] private float wallJumpForce = 12f;
-    [SerializeField] private Vector2 wallJumpDirection = new Vector2(1f, 1.5f);
-    [SerializeField] private float wallJumpTime = 0.2f;
+    [SerializeField] private float wallSlideSpeed = 3f;
+    [SerializeField] private float wallJumpForce = 14f;
+    [SerializeField] private float wallJumpControlLock = 0.1f;
 
     private bool isGrounded;
-    private bool isGroundPounding;
-
-    private bool isTouchingWallLeft;
-    private bool isTouchingWallRight;
     private bool isWallSliding;
     private bool isWallJumping;
     private float wallJumpTimer;
-    private int wallDirection;
+    private int wallDir;
 
     private void Awake()
     {
         m_moveAction = InputSystem.actions.FindAction("Move");
         m_jumpAction = InputSystem.actions.FindAction("Jump");
-        m_dashAction = InputSystem.actions.FindAction("Dash");
         m_groundpoundAction = InputSystem.actions.FindAction("Ground Pound");
 
-        m_rigidbody = GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
     }
 
     private void Update()
     {
-        if (Time.timeScale == 0f)
-            return;
+        input = m_moveAction.ReadValue<Vector2>();
 
-        m_input = m_moveAction.ReadValue<Vector2>();
-
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
-
-        isTouchingWallLeft = Physics2D.OverlapCircle(wallCheckLeft.position, wallRadius, wallLayer);
-        isTouchingWallRight = Physics2D.OverlapCircle(wallCheckRight.position, wallRadius, wallLayer);
-
-        if (!isGrounded && ((isTouchingWallRight && m_input.x > 0) || (isTouchingWallLeft && m_input.x < 0)))
-        {
-            isWallSliding = true;
-            wallDirection = isTouchingWallRight ? 1 : -1;
-        }
-        else
-        {
-            isWallSliding = false;
-        }
-
-        if (m_jumpAction.WasPressedThisFrame())
-        {
-            if (isWallSliding)
-            {
-                isWallJumping = true;
-                wallJumpTimer = wallJumpTime;
-
-                m_rigidbody.linearVelocity = new Vector2(
-                    -wallDirection * wallJumpDirection.x * wallJumpForce,
-                    wallJumpDirection.y * wallJumpForce
-                );
-            }
-            else if (isGrounded)
-            {
-                Jump();
-            }
-        }
-
-        if (isWallJumping)
-        {
-            wallJumpTimer -= Time.deltaTime;
-            if (wallJumpTimer <= 0f)
-            {
-                isWallJumping = false;
-            }
-        }
-
-        if (m_dashAction.WasPressedThisFrame() && canDash)
-        {
-            StartCoroutine(Dash());
-        }
-
-        if (m_groundpoundAction.WasPressedThisFrame() && !isGrounded && !isGroundPounding)
-        {
-            GroundPound();
-        }
+        GroundCheck();
+        WallCheck();
+        HandleWallSlide();
+        HandleJump();
+        HandleGroundPound();
+        ApplyBetterGravity();
 
         if (isGrounded)
         {
             isGroundPounding = false;
-            isWallJumping = false;
         }
     }
 
     private void FixedUpdate()
     {
-        if (Time.timeScale == 0f)
-            return;
+        HandleMovement();
+    }
 
-        if (isDashing)
-            return;
+    void HandleMovement()
+    {
+        float targetSpeed = input.x * maxSpeed;
 
-        float moveX = m_input.x;
+        float accelRate = isGrounded
+            ? (Mathf.Abs(targetSpeed) > 0.01f ? accel : decel)
+            : airAccel;
 
-        if (isWallSliding)
+        if (isWallJumping)
         {
-            moveX = 0f;
+            wallJumpTimer -= Time.fixedDeltaTime;
+            if (wallJumpTimer <= 0f)
+                isWallJumping = false;
+        }
 
-            if (m_rigidbody.linearVelocity.y < -wallSlideSpeed)
+        float controlMultiplier = isWallJumping ? 0.5f : 1f;
+
+        float newVelX = Mathf.MoveTowards(
+            rb.linearVelocity.x,
+            targetSpeed,
+            accelRate * controlMultiplier * Time.fixedDeltaTime
+        );
+
+        rb.linearVelocity = new Vector2(newVelX, rb.linearVelocity.y);
+    }
+
+    void HandleJump()
+    {
+        if (m_jumpAction.WasPressedThisFrame())
+        {
+            if (isWallSliding)
             {
-                m_rigidbody.linearVelocity = new Vector2(0f, -wallSlideSpeed);
-                return;
+                isWallJumping = true;
+                wallJumpTimer = wallJumpControlLock;
+
+                float jumpDir = -wallDir;
+
+                rb.linearVelocity = new Vector2(
+                    jumpDir * wallJumpForce,
+                    jumpForce
+                );
+            }
+            else if (isGrounded)
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             }
         }
 
-        if (!isWallJumping)
+        if (m_jumpAction.WasReleasedThisFrame() && rb.linearVelocity.y > 0)
         {
-            m_rigidbody.linearVelocity = new Vector2(
-                moveX * m_playerSpeed,
-                m_rigidbody.linearVelocity.y
-            );
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
         }
     }
 
-    private void Jump()
+    void ApplyBetterGravity()
     {
-        m_rigidbody.linearVelocity = new Vector2(
-            m_rigidbody.linearVelocity.x,
-            m_jumpForce
-        );
+        float yVel = rb.linearVelocity.y;
+
+        if (yVel < 0)
+            yVel -= gravity * fallMultiplier * Time.deltaTime;
+        else if (yVel > 0 && !m_jumpAction.IsPressed())
+            yVel -= gravity * lowJumpMultiplier * Time.deltaTime;
+        else
+            yVel -= gravity * Time.deltaTime;
+
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, yVel);
     }
 
-    private IEnumerator Dash()
+    void HandleGroundPound()
     {
-        canDash = false;
-        isDashing = true;
-
-        float originalGravity = m_rigidbody.gravityScale;
-        m_rigidbody.gravityScale = 0f;
-
-        float dashDirection = m_input.x == 0 ? transform.localScale.x : Mathf.Sign(m_input.x);
-
-        m_rigidbody.linearVelocity = new Vector2(dashDirection * dashingPower, 0f);
-
-        yield return new WaitForSeconds(dashingTime);
-
-        m_rigidbody.gravityScale = originalGravity;
-        isDashing = false;
-
-        yield return new WaitForSeconds(dashingCooldown);
-
-        canDash = true;
-    }
-
-    private void GroundPound()
-    {
-        isGroundPounding = true;
-
-        m_rigidbody.linearVelocity = new Vector2(
-            m_rigidbody.linearVelocity.x,
-            -m_poundForce
-        );
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        if (groundCheck != null)
+        if (m_groundpoundAction.WasPressedThisFrame() && !isGrounded && !isGroundPounding)
         {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+            isGroundPounding = true;
+            rb.linearVelocity = new Vector2(0f, -poundForce);
         }
+    }
 
-        if (wallCheckLeft != null)
+    void GroundCheck()
+    {
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundRadius, groundLayer);
+    }
+
+    void WallCheck()
+    {
+        bool left = Physics2D.OverlapCircle(wallCheckLeft.position, wallRadius, wallLayer);
+        bool right = Physics2D.OverlapCircle(wallCheckRight.position, wallRadius, wallLayer);
+
+        if (!isGrounded && (left || right))
         {
-            Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(wallCheckLeft.position, wallRadius);
+            isWallSliding = true;
+            wallDir = right ? 1 : -1;
         }
-
-        if (wallCheckRight != null)
+        else
         {
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(wallCheckRight.position, wallRadius);
+            isWallSliding = false;
+        }
+    }
+
+    void HandleWallSlide()
+    {
+        if (isWallSliding && rb.linearVelocity.y < -wallSlideSpeed)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideSpeed);
         }
     }
 }
